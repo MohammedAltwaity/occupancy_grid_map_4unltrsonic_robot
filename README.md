@@ -1,112 +1,92 @@
 Occupancy Grid Mapper
-Builds 2D occupancy grid maps from robot poses + 4 ultrasonic ToF sensors using log-odds Bayesian updates
+A lightweight C++ tool for generating 2D occupancy grid maps from robot poses and four ultrasonic Time-of-Flight (ToF) sensors, using log-odds Bayesian updates. Perfect for robotics, SLAM, and sensor-based mapping in research and development.
 Quick Start
-Compile (C++17):
+Compile (C++17)
+
 g++ -std=c++17 main.cpp src/*.cpp -Iinclude -o occmap
-Run - builds map from CSV to PGM image:
+
+Run
+Create a map from CSV to PGM:
 ./occmap assets/robot.csv map.pgm
+
+
 Input Format
-CSV columns: timestamp,x,y,theta,tof0,tof1,tof2,tof3
+CSV: timestamp,x,y,theta,tof0,tof1,tof2,tof3
 
+x, y: Robot position (meters)
+theta: Heading (radians)
+tof[0-3]: ToF measurements (seconds) for 4 sensors
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-FieldDescriptionx,yRobot position (meters)thetaRobot heading (radians)tof[0-3]Time-of-flight (seconds) for 4 sensors
 Sensor Layout:
-us1 (front-left)    us0 (front-right)
-↖️               ↗️
-rear-left (us2)  ↔  rear-right (us3)
+
+us0: Front-right (45°)
+us1: Front-left (135°)
+us2: Rear-left (-135°)
+us3: Rear-right (-45°)
+
 Key Features
 
+Log-Odds Updates: Bayesian model (P_occ=0.7, P_free=0.3)
+Ray Tracing: DDA algorithm for free/occupied cells
+Sensor Model: 30° FOV cones, configurable rays
+Uncertainty: 5cm hit smearing, 4m range cap
+Efficiency: STRIDE skips rows for speed
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-FeatureDescriptionLog-OddsBayesian occupancy updates (P_occ=70%, P_free=30%)Ray TracingDDA algorithm marks free space + occupied blobsSensor Model30° FOV cones, configurable ray countUncertaintySmears hits over 5cm radius, clips at 4mEfficiencySTRIDE=2 skips rows for fast processing
 Tunable Parameters
+
 const double RES        = 0.05;  // 5cm grid cells
 const double MAP_SIZE_M = 20.0;  // 20×20m map
-const int    N_RAYS     = 1;     // Rays per sensor cone
-const double MAX_RANGE  = 4.0;   // Sensor max distance
+const int    N_RAYS     = 1;     // Rays per cone
+const double MAX_RANGE  = 4.0;   // Max range (m)
 const int    STRIDE     = 2;     // Process every 2nd pose
-Files
-main.cpp          # Core mapping algorithm
-include/
-├── grid.hpp      # Occupancy grid + DDA ray tracing
-└── csv_parser.hpp # CSV pose/measurement parser
-src/
-├── grid.cpp      # Grid implementation
-└── csv_parser.cpp # CSV parsing
+
+
+Project Structure
+
+main.cpp: Core algorithm
+include/grid.hpp: Grid and ray tracing
+include/csv_parser.hpp: CSV parser
+src/grid.cpp, src/csv_parser.cpp: Implementations
+
+
+
 Output
 PGM Image (grayscale):
 
 Black (0): Unknown
 Gray (~127): Uncertain
-White (255): Free space
+White (255): Free
 Dark (~25): Occupied
 
 View with: eog map.pgm or ImageMagick
+
+
+
 Algorithm
 
-Parse poses + ToF measurements
+Parse CSV for poses and ToF data
 For each pose:
 
-Convert ToF to distance (speed of sound)
+Convert ToF to distance (343 m/s)
 Transform sensor positions to world frame
-Ray trace free space to hit point
-Mark occupied blob at detection
+Trace free space to hit point
+Mark occupied blob (5cm radius)
 
 
-Log-odds update: L += log(P/(1-P))
-Export PGM with prob to 0-255 mapping
+Update log-odds: L += log(P/(1-P))
+Export PGM (probability → 0-255)
 
-Example Usage
-Full resolution (slow)
-STRIDE=1 ./occmap data/full.csv detailed_map.pgm
-Fast preview
-STRIDE=4 ./occmap data/full.csv quick_map.pgm
-Custom resolution
-RES=0.1 ./occmap data/full.csv coarse_map.pgm
-Perfect for: ROS integration, SLAM validation, ultrasonic sensor characterization!
-Built with love for robotics research • License: MIT
+
+
+Applications
+
+ROS integration
+SLAM validation
+Ultrasonic sensor analysis
+
+
+
+
+License: MIT
+
